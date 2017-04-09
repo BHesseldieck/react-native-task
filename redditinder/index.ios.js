@@ -5,12 +5,6 @@ const ReactNative = require('react-native');
 const Login = require('./src/Login.js');
 
 const styles = ReactNative.StyleSheet.create({
-  text: {
-    color: 'black',
-    backgroundColor: 'white',
-    fontSize: 30,
-    margin: 80
-  },
   container: {
     flex: 1
   }
