@@ -12,7 +12,7 @@ const styles = ReactNative.StyleSheet.create({
 
 class redditinder extends React.Component {
   render(){
-    return <ReactNative.NavigatorIOS style={styles.container} initialRoute={{title: 'Login', component: Login}} />;
+    return <Login style={styles.container}/>;
   }
 }
 

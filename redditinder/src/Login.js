@@ -8,8 +8,11 @@ import {
   View,
   TouchableHighlight,
   ActivityIndicator,
-  Image
+  Image,
+  NavigatorIOS
 } from 'react-native';
+import _ from 'lodash';
+import Home from './Home.js';
 
 const styles = StyleSheet.create({
   description: {
@@ -68,52 +71,91 @@ class Login extends React.Component {
     super(props);
     this.state = {
       isLoading: false,
-      loggedIn: false
+      loggedIn: false,
+      message: ''
     };
     this.username = '';
     this.password = '';
+    this.images = [];
+    this.redditName = 'aww';
   }
 
-  changeUsername(event) {
+  typingUsername(event) {
     this.username = event.nativeEvent.text;
   }
 
-  changePassword(event) {
+  typingPassword(event) {
     this.password = event.nativeEvent.text;
   }
 
-  _checkLogin(query) {
+  _responseHandler(response) {
+    for (var i = 0; i < response.data.children.length; i++) {
+      if (response.data.children[i].data.preview.enabled && _.isEmpty(response.data.children[i].data.preview.images[0].variants)) {
+        this.images.push({
+          url: {uri: String(response.data.children[i].data.preview.images[0].source.url)},
+          liked: undefined
+        })
+      }
+    }
+    console.log(this.images, this.images.length);
+    this.setState({
+      isLoading: false,
+      loggedIn: true
+    });
+  }
+
+  _requestLogin() {
     this.setState({ isLoading: true });
-    console.log(query);
+    console.log('Username & PW:' ,this.username, this.password);
     // POST Request to server here to check login, dummy check for password
-    if (query[1] === 'Password') {
-      this.setState({ loggedIn: true});
+    if (this.password === 'Password') {
+      fetch('https://www.reddit.com/r/aww.json')
+        .then(response => response.json())
+        .then(json => this._responseHandler(json))
+        .catch(error =>
+           this.setState({
+            isLoading: false,
+            message: 'Error occured: ' + error
+         }));
+    } else {
+      this.setState({
+        isLoading: false,
+        message: 'Wrong password or Username!'
+      })
     }
   }
 
-  onLoginPressed() {
-    var query = [this.username,this.password];
-    console.log(query);
-    this._checkLogin(query);
+  checkLogin() {
+    return this.state.loggedIn;
   }
 
   render(){
     var spinner = this.state.isLoading ? (<ActivityIndicator size='large' style={styles.image}/>) : (<View/>);
-    return(
-      <View style={styles.container}>
-        <Image source={require('../reddit-logo.png')} style={styles.image}/>
-        <View style={styles.flowRight}>
-          <TextInput style={styles.textInput} placeholder='Username' defaultValue={this.username} onChange={this.changeUsername.bind(this)}/>
-          <TextInput style={styles.textInput} placeholder='Password' defaultValue={this.password} onChange={this.changePassword.bind(this)}/>
+    if(!this.state.loggedIn) {
+      return(
+        <View style={styles.container}>
+          <Image source={require('../reddit-logo.png')} style={styles.image}/>
+          <View style={styles.flowRight}>
+            <TextInput style={styles.textInput} placeholder='Username' defaultValue={this.username} onChange={this.typingUsername.bind(this)}/>
+            <TextInput style={styles.textInput} placeholder='Password' defaultValue={this.password} onChange={this.typingPassword.bind(this)}/>
+          </View>
+          <View style={styles.flowRight}>
+            <TouchableHighlight style={styles.button} underlayColor='#99d9f4' onPress={this._requestLogin.bind(this)}>
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableHighlight>
+          </View>
+          <Text style={styles.description}>{this.state.message}</Text>
+          {spinner}
         </View>
-        <View style={styles.flowRight}>
-          <TouchableHighlight style={styles.button} underlayColor='#99d9f4' onPress={this.onLoginPressed.bind(this)}>
-            <Text style={styles.buttonText}>Login</Text>
-          </TouchableHighlight>
-        </View>
-        {spinner}
-      </View>
-    );
+      );
+    } else {
+      return <NavigatorIOS style={{flex: 1}} initialRoute={{title: `${this.redditName} | ${this.username}`, component: Home, passProps:{
+        username: this.username,
+        redditName: this.redditName,
+        images: this.images,
+        checkLogin: this.checkLogin.bind(this)
+      }}}/>
+    }
   }
 }
 
